@@ -7,11 +7,12 @@ from torch import Tensor
 from torch.utils.data import Dataset
 
 
-class MelDataset(Dataset):
+class HifiGanDataset(Dataset):
     def __init__(
         self,
         wav_dir: str,
         files: str,
+        segment_size: int = 8192,
         sample_rate: int = 22050,
         silence: float = 0.1,
         trim: bool = True,
@@ -19,6 +20,10 @@ class MelDataset(Dataset):
     ):
         self.wav_dir = wav_dir
         self.files = files
+
+        self.segment_size = segment_size
+        self.hop_length = 256
+
         self.sample_rate = sample_rate
 
         self.silence_len = int(silence * sample_rate)
@@ -42,14 +47,29 @@ class MelDataset(Dataset):
         if self.trim:
             wav, _ = librosa.effects.trim(wav, frame_length=self.trim_frame_length)
 
+        # Pad with silence at the end
+        # Note: For TTS applications with attention, this only appears to work if there
+        # is an end token appended to the input text. If there is no end token, the TTS
+        # may struggle to learn alignments because the silence is not associated with
+        # any input value.
         wav = np.pad(wav, (0, self.silence_len))
+
+        # Choose a random segment from the wav data.
+        if len(wav) >= self.segment_size:
+            max_wav_start = len(wav) - self.segment_size
+            wav_start = randint(0, max_wav_start)
+            wav = wav[wav_start : wav_start + self.segment_size]
+        else:
+            # If the wav data is too short (unlikely in most TTS datasets),
+            # pad it to get the correct segment size
+            wav = np.pad(wav, (0, self.segment_size - len(wav)))
 
         mel_spectrogram = librosa.feature.melspectrogram(
             y=wav,
             sr=22050,
             n_fft=1024,
             win_length=1024,
-            hop_length=256,
+            hop_length=self.hop_length,
             fmin=0.0,
             fmax=8000.0,
             n_mels=80,
@@ -68,4 +88,4 @@ class MelDataset(Dataset):
         # instead of (n_mels, timesteps)
         mel_spectrogram = mel_spectrogram.swapaxes(0, 1)
 
-        return torch.from_numpy(mel_spectrogram)
+        return torch.from_numpy(mel_spectrogram), torch.from_numpy(wav)
