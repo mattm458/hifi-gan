@@ -1,3 +1,4 @@
+import random
 from os import path
 
 import librosa
@@ -57,7 +58,7 @@ class HifiGanDataset(Dataset):
         # Choose a random segment from the wav data.
         if len(wav) >= self.segment_size:
             max_wav_start = len(wav) - self.segment_size
-            wav_start = randint(0, max_wav_start)
+            wav_start = random.randint(0, max_wav_start)
             wav = wav[wav_start : wav_start + self.segment_size]
         else:
             # If the wav data is too short (unlikely in most TTS datasets),
