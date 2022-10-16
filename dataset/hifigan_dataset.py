@@ -1,5 +1,6 @@
 import random
 from os import path
+from typing import Tuple
 
 import librosa
 import numpy as np
@@ -34,7 +35,7 @@ class HifiGanDataset(Dataset):
     def __len__(self) -> int:
         return len(self.files)
 
-    def __getitem__(self, i: int) -> Tensor:
+    def __getitem__(self, i: int) -> Tuple[Tensor, Tensor]:
         filename = self.files[i]
 
         wav, sr = librosa.load(path.join(self.wav_dir, filename))
