@@ -27,6 +27,13 @@ def train_subparser(subparsers):
     )
 
     train_subparser.add_argument(
+        "--wav-dir",
+        type=str,
+        required=True,
+        help="Path to the dataset's directory of WAV files",
+    )
+
+    train_subparser.add_argument(
         "--device",
         type=int,
         required=True,
