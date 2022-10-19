@@ -43,6 +43,8 @@ if __name__ == "__main__":
         )
 
         hifi_gan = HifiGan()
+        hifi_gan.weight_norm()
+
         trainer = pl.Trainer(devices=[args.device], accelerator='gpu', precision=16,**config['trainer'])
 
         trainer.fit(hifi_gan, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader)
