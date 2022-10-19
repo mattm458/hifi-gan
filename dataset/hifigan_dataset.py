@@ -35,7 +35,7 @@ class HifiGanDataset(Dataset):
     def __len__(self) -> int:
         return len(self.files)
 
-    def __getitem__(self, i: int) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, i: int) -> Tuple[Tensor, Tensor, Tensor]:
         filename = self.files[i]
 
         wav, sr = librosa.load(path.join(self.wav_dir, filename))
@@ -66,8 +66,12 @@ class HifiGanDataset(Dataset):
             # pad it to get the correct segment size
             wav = np.pad(wav, (0, self.segment_size - len(wav)))
 
-        mel_spectrogram = librosa.feature.melspectrogram(
-            y=wav,
+        wav_mel = np.pad(
+            wav, (int((1024 - 256) / 2), int((1024 - 256) / 2)), mode="reflect"
+        )
+
+        mel_spectrogram_X = librosa.feature.melspectrogram(
+            y=wav_mel,
             sr=22050,
             n_fft=1024,
             win_length=1024,
@@ -77,17 +81,36 @@ class HifiGanDataset(Dataset):
             n_mels=80,
             power=1,
             norm="slaney",
+            center=False,
+        )
+
+        mel_spectrogram_y = librosa.feature.melspectrogram(
+            y=wav_mel,
+            sr=22050,
+            n_fft=1024,
+            win_length=1024,
+            hop_length=self.hop_length,
+            fmin=0.0,fmax=None,
+            n_mels=80,
+            power=1,
+            norm="slaney",
             pad_mode="reflect",
+            center=False,
         )
 
         # Clamp to a small minimum value to avoid log(0)
-        mel_spectrogram = np.clip(mel_spectrogram, a_min=1e-5, a_max=None)
+        mel_spectrogram_X = np.clip(mel_spectrogram_X, a_min=1e-5, a_max=None)
 
         # Make it a log-Mel spectrogram
-        mel_spectrogram = np.log(mel_spectrogram)
+        mel_spectrogram_X = np.log(mel_spectrogram_X)
 
         # Swap axes so the spectrogram is (timesteps, n_mels)
         # instead of (n_mels, timesteps)
-        mel_spectrogram = mel_spectrogram.swapaxes(0, 1)
+        mel_spectrogram_X = mel_spectrogram_X.swapaxes(0, 1)
+        mel_spectrogram_y = mel_spectrogram_y.swapaxes(0, 1)
 
-        return torch.from_numpy(mel_spectrogram), torch.from_numpy(wav)
+        return (
+            torch.from_numpy(mel_spectrogram_X),
+            torch.from_numpy(wav),
+            torch.from_numpy(mel_spectrogram_y),
+        )
