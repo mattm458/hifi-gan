@@ -124,7 +124,7 @@ class HifiGan(pl.LightningModule):
 
         loss_discriminator = loss_disc_s + loss_disc_f
 
-        loss_discriminator.backward()
+        self.manual_backward(loss_discriminator)
         discriminator_optimizer.step()
 
         self.log(
@@ -156,7 +156,7 @@ class HifiGan(pl.LightningModule):
 
         loss_generator = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
 
-        loss_generator.backward()
+        self.manual_backward(loss_generator)
         generator_optimizer.step()
 
         self.log("train_generator_loss", loss_generator, on_epoch=True, on_step=True)
