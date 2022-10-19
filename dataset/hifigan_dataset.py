@@ -1,6 +1,6 @@
 import random
 from os import path
-from typing import Tuple
+from typing import List, Tuple
 
 import librosa
 import numpy as np
@@ -13,7 +13,7 @@ class HifiGanDataset(Dataset):
     def __init__(
         self,
         wav_dir: str,
-        files: str,
+        files: List[str],
         segment_size: int = 8192,
         sample_rate: int = 22050,
         silence: float = 0.1,
@@ -61,6 +61,7 @@ class HifiGanDataset(Dataset):
             max_wav_start = len(wav) - self.segment_size
             wav_start = random.randint(0, max_wav_start)
             wav = wav[wav_start : wav_start + self.segment_size]
+
         else:
             # If the wav data is too short (unlikely in most TTS datasets),
             # pad it to get the correct segment size
@@ -90,7 +91,8 @@ class HifiGanDataset(Dataset):
             n_fft=1024,
             win_length=1024,
             hop_length=self.hop_length,
-            fmin=0.0,fmax=None,
+            fmin=0.0,
+            fmax=None,
             n_mels=80,
             power=1,
             norm="slaney",
