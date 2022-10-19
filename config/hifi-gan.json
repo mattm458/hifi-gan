@@ -1,0 +1,10 @@
+{
+	"dataloader": {
+		"batch_size": 16,
+		"num_workers": 4,
+		"persistent_workers": true
+	},
+	"trainer": {
+		"max_epochs": 3100
+	}
+}
