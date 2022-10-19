@@ -69,6 +69,16 @@ class HifiGan(pl.LightningModule):
             center=False,
         )
 
+    def weight_norm(self):
+        self.generator.weight_norm()
+        self.multi_period_discriminator.weight_norm()
+        self.multi_scale_discriminator.weight_norm()
+
+    def remove_weight_norm(self):
+        self.generator.remove_weight_norm()
+        self.multi_period_discriminator.remove_weight_norm()
+        self.multi_scale_discriminator.remove_weight_norm()
+
     def forward(self, mel_spectrogram: Tensor) -> Tensor:
         return self.generator(mel_spectrogram)
 
