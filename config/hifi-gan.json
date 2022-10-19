@@ -5,6 +5,7 @@
 		"persistent_workers": true
 	},
 	"trainer": {
-		"max_epochs": 3100
+		"max_epochs": 3100,
+		"benchmark": true
 	}
 }
