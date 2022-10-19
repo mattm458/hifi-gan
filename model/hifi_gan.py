@@ -46,10 +46,11 @@ def feature_loss(fmap_r, fmap_g):
 
 
 class HifiGan(pl.LightningModule):
-    def __init__(self, lr=0.0002):
+    def __init__(self, lr=0.0002, lr_decay=0.999):
         super().__init__()
 
         self.lr = lr
+        self.lr_decay = lr_decay
 
         self.generator = Generator()
         self.multi_period_discriminator = MultiPeriodDiscriminator()
@@ -89,15 +90,39 @@ class HifiGan(pl.LightningModule):
         generator_optimizer = torch.optim.AdamW(
             self.generator.parameters(), lr=self.lr, betas=(0.8, 0.99)
         )
+        generator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            generator_optimizer, gamma=self.lr_decay
+        )
 
         discriminator_optimizer = torch.optim.AdamW(
             list(self.multi_period_discriminator.parameters())
             + list(self.multi_scale_discriminator.parameters()),
-            lr=0.0002,
+            lr=self.lr,
             betas=(0.8, 0.99),
         )
+        discriminator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            discriminator_optimizer, gamma=self.lr_decay
+        )
 
-        return generator_optimizer, discriminator_optimizer
+        return {
+            "optimizer": generator_optimizer,
+            "lr_scheduler": {
+                "scheduler": generator_scheduler,
+                "name": "generator_scheduler",
+            },
+        }, {
+            "optimizer": discriminator_optimizer,
+            "lr_scheduler": {
+                "scheduler": discriminator_scheduler,
+                "name": "discriminator_scheduler",
+            },
+        }
+
+    def training_epoch_end(self, outputs):
+        generator_scheduler, discriminator_scheduler = self.lr_schedulers()
+
+        generator_scheduler.step()
+        discriminator_scheduler.step()
 
     def training_step(
         self, batch: Tuple[Tensor, Tensor, Tensor], batch_idx: int
@@ -163,6 +188,14 @@ class HifiGan(pl.LightningModule):
         generator_optimizer.step()
 
         self.log("train_generator_loss", loss_generator, on_epoch=True, on_step=True)
+
+        self.log(
+            "loss",
+            loss_generator + loss_discriminator,
+            on_epoch=True,
+            on_step=True,
+            prog_bar=True,
+        )
 
     def validation_step(
         self, batch: Tuple[Tensor, Tensor, Tensor], batch_idx: int
