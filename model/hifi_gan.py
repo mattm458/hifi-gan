@@ -46,8 +46,10 @@ def feature_loss(fmap_r, fmap_g):
 
 
 class HifiGan(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, lr=0.0002):
         super().__init__()
+
+        self.lr = lr
 
         self.generator = Generator()
         self.multi_period_discriminator = MultiPeriodDiscriminator()
@@ -84,7 +86,7 @@ class HifiGan(pl.LightningModule):
 
     def configure_optimizers(self):
         generator_optimizer = torch.optim.AdamW(
-            self.generator.parameters(), lr=0.0002, betas=(0.8, 0.99)
+            self.generator.parameters(), lr=self.lr, betas=(0.8, 0.99)
         )
 
         discriminator_optimizer = torch.optim.AdamW(
