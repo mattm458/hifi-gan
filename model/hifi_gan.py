@@ -67,6 +67,7 @@ class HifiGan(pl.LightningModule):
             n_mels=80,
             power=1,
             norm="slaney",
+            mel_scale="slaney",
             pad_mode="reflect",
             center=False,
         )
