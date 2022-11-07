@@ -7,8 +7,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor
 from torch.utils.data import DataLoader
 
-from dataset.hifigan_dataset import HifiGanDataset
-from model.hifi_gan import HifiGan
+from hifi_gan.dataset import HifiGanDataset
+from hifi_gan.model import HifiGan
 from util.args import args
 
 if __name__ == "__main__":

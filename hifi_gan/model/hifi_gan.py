@@ -6,9 +6,9 @@ from torch import Tensor
 from torch.nn import functional as F
 from torchaudio.transforms import MelSpectrogram
 
-from model.generator import Generator
-from model.period_discriminator import MultiPeriodDiscriminator
-from model.scale_discriminator import MultiScaleDiscriminator
+from hifi_gan.model.generator import Generator
+from hifi_gan.model.period_discriminator import MultiPeriodDiscriminator
+from hifi_gan.model.scale_discriminator import MultiScaleDiscriminator
 
 
 def discriminator_loss(disc_real_outputs, disc_generated_outputs):

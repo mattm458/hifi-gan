@@ -1,0 +1,1 @@
+from hifi_gan.dataset.hifigan_dataset import HifiGanDataset

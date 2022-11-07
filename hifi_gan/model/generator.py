@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 from torch.nn.utils import remove_weight_norm, weight_norm
 
-from model.resblock import MultiReceptiveFieldFusion
+from hifi_gan.model.resblock import MultiReceptiveFieldFusion
 
 
 class Generator(nn.Module):
