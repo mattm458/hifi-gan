@@ -1,14 +1,13 @@
 from typing import Tuple
 
-import pytorch_lightning as pl
+import lightning as pl
 import torch
-from torch import Tensor
-from torch.nn import functional as F
-from torchaudio.transforms import MelSpectrogram
-
 from hifi_gan.model.generator import Generator
 from hifi_gan.model.period_discriminator import MultiPeriodDiscriminator
 from hifi_gan.model.scale_discriminator import MultiScaleDiscriminator
+from torch import Tensor
+from torch.nn import functional as F
+from torchaudio.transforms import MelSpectrogram
 
 
 def discriminator_loss(disc_real_outputs, disc_generated_outputs):
@@ -72,6 +71,8 @@ class HifiGan(pl.LightningModule):
             pad_mode="reflect",
             center=False,
         )
+
+        self.weight_norm()
 
     def weight_norm(self):
         self.generator.weight_norm()

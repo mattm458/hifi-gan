@@ -21,7 +21,9 @@ if __name__ == "__main__":
         train_data = pd.read_csv(
             args.training_data, delimiter="|", quoting=csv.QUOTE_NONE
         )
-        train_dataset = HifiGanDataset(wav_dir, train_data.wav.tolist())
+        train_dataset = HifiGanDataset(
+            wav_dir=wav_dir, files=train_data.wav.tolist(), **config["dataset"]
+        )
         train_dataloader = DataLoader(
             train_dataset,
             shuffle=True,
@@ -43,7 +45,6 @@ if __name__ == "__main__":
         )
 
         hifi_gan = HifiGan()
-        hifi_gan.weight_norm()
 
         trainer = pl.Trainer(
             devices=[args.device],
