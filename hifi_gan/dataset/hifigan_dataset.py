@@ -23,7 +23,7 @@ class HifiGanDataset(Dataset):
         files: List[str],
         sample_rate: int = 22050,
         segment_size: int = 8192,
-        trim: bool = True,
+        trim: bool = False,
         trim_frame_length=512,
         extract_features=None,
         scaler: Scaler = None,
@@ -77,10 +77,9 @@ class HifiGanDataset(Dataset):
             # pad it to get the correct segment size
             wav = F.pad(wav, (0, self.segment_size - len(wav)))
 
-        wav_mel = pad_wav_generator(wav)
-
-        mel_spectrogram_X = self.tacotron_mel_spectrogram(wav_mel)
-        mel_spectrogram_y = self.hifi_gan_spectrogram(wav_mel)
+        wav_tacotron = pad_wav_generator(wav)
+        mel_spectrogram_X = self.tacotron_mel_spectrogram(wav_tacotron)[2:-2]
+        mel_spectrogram_y = self.hifi_gan_spectrogram(wav)
 
         if self.extract_features is not None:
             features_dict = extract_features(
@@ -92,7 +91,7 @@ class HifiGanDataset(Dataset):
 
             features_scaled = torch.from_numpy(features_scaled)
             features_clipped = torch.clamp(features_scaled, min=-1, max=1)
-            
+
             return (
                 mel_spectrogram_X,
                 wav,

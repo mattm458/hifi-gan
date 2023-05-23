@@ -2,9 +2,10 @@
 import csv
 import json
 
+import lightning.pytorch as pl
 import pandas as pd
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import LearningRateMonitor
+import torch
+from lightning.pytorch.callbacks import LearningRateMonitor
 from torch.utils.data import DataLoader
 
 from hifi_gan.dataset import HifiGanDataset
@@ -44,18 +45,24 @@ if __name__ == "__main__":
             **config["dataloader"]
         )
 
+        torch.set_float32_matmul_precision("high")
+
         hifi_gan = HifiGan()
 
         trainer = pl.Trainer(
             devices=[args.device],
             accelerator="gpu",
-            precision=16,
+            precision="16-mixed",
             **config["trainer"],
-            callbacks=[LearningRateMonitor(logging_interval="epoch")]
+            callbacks=[LearningRateMonitor(logging_interval="epoch")],
+            benchmark=True
         )
 
         trainer.fit(
-            hifi_gan, train_dataloaders=train_dataloader, val_dataloaders=val_dataloader
+            hifi_gan,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=val_dataloader,
+            ckpt_path=args.checkpoint,
         )
 
     elif args.mode == "test":

@@ -119,7 +119,7 @@ class HifiGan(pl.LightningModule):
             },
         }
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
         generator_scheduler, discriminator_scheduler = self.lr_schedulers()
 
         generator_scheduler.step()
@@ -163,9 +163,7 @@ class HifiGan(pl.LightningModule):
         # Train the generator
         # =====================================================================
         # Create a Mel spectrogram from the predicted waveform
-        mel_spectrogram_y_hat = self.mel_spectrogram(
-            F.pad(y_hat, (int((1024 - 256) / 2), int((1024 - 256) / 2)), mode="reflect")
-        ).swapaxes(1, 2)
+        mel_spectrogram_y_hat = self.mel_spectrogram(y_hat).swapaxes(1, 2)
 
         generator_optimizer.zero_grad()
 
@@ -206,9 +204,7 @@ class HifiGan(pl.LightningModule):
         # Produce a waveform with the generator
         y_hat = self(mel_spectrogram)
 
-        mel_spectrogram_y_hat = self.mel_spectrogram(
-            F.pad(y_hat, (int((1024 - 256) / 2), int((1024 - 256) / 2)), mode="reflect")
-        ).swapaxes(1, 2)
+        mel_spectrogram_y_hat = self.mel_spectrogram(y_hat).swapaxes(1, 2)
 
         loss = F.l1_loss(mel_spectrogram_y_hat, mel_spectrogram_y)
 

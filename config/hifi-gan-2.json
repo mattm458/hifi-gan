@@ -1,14 +1,13 @@
 {
 	"dataloader": {
 		"batch_size": 16,
-		"num_workers": 16,
+		"num_workers": 8,
 		"persistent_workers": true
 	},
 	"dataset": {
-		"segment_size": 16384
+		"segment_size": 8192
 	},
 	"trainer": {
-		"max_epochs": 3100,
-		"benchmark": true
+		"max_steps": 2507900
 	}
 }
