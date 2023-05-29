@@ -4,7 +4,7 @@ hyphenate==1.1.0
 librosa==0.10.0.post2
 lightning==2.0.2
 nltk==3.8.1
-pandas==2.0.1
+pandas==2.0.2
 praat-parselmouth==0.4.3
 tensorboard==2.13.0 
 torch==2.0.1
