@@ -48,6 +48,55 @@ def train_subparser(subparsers):
     )
 
 
+def finetune_subparser(subparsers):
+    train_subparser = subparsers.add_parser(
+        "finetune", help="Fine-tune the model on generated Mel spectrograms"
+    )
+
+    train_subparser.add_argument(
+        "--checkpoint",
+        type=str,
+        required=True,
+        help="Resume training from the given checkpoint.",
+        default=None,
+    )
+
+    train_subparser.add_argument(
+        "--training-data",
+        type=str,
+        required=True,
+        help="Path to the training data",
+    )
+
+    train_subparser.add_argument(
+        "--validation-data",
+        type=str,
+        required=True,
+        help="Path to the validation data",
+    )
+
+    train_subparser.add_argument(
+        "--wav-dir",
+        type=str,
+        required=True,
+        help="Path to the dataset's directory of WAV files",
+    )
+
+    train_subparser.add_argument(
+        "--device",
+        type=int,
+        required=True,
+        help="The GPU to use for training",
+    )
+
+    train_subparser.add_argument(
+        "--num-workers",
+        type=int,
+        default=3,
+        help="The number of dataloader workers",
+    )
+
+
 def test_subparser(subparsers):
     test_subparser = subparsers.add_parser("test", help="Evaluate a trained model")
 
@@ -107,6 +156,7 @@ parser.add_argument(
 subparsers = parser.add_subparsers(required=True, dest="mode")
 
 train_subparser(subparsers)
+finetune_subparser(subparsers)
 test_subparser(subparsers)
 torchscript_subparser(subparsers)
 
