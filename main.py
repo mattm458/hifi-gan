@@ -36,7 +36,9 @@ if __name__ == "__main__":
         val_data = pd.read_csv(
             args.validation_data, delimiter="|", quoting=csv.QUOTE_NONE
         )
-        val_dataset = HifiGanDataset(wav_dir, val_data.wav.tolist())
+        val_dataset = HifiGanDataset(
+            wav_dir=wav_dir, files=val_data.wav.tolist(), **config["dataset"]
+        )
         val_dataloader = DataLoader(
             val_dataset,
             shuffle=False,
@@ -54,7 +56,7 @@ if __name__ == "__main__":
             accelerator="gpu",
             precision="16-mixed",
             **config["trainer"],
-            callbacks=[LearningRateMonitor(logging_interval="epoch")],
+            callbacks=[LearningRateMonitor(logging_interval="step")],
             benchmark=True
         )
 

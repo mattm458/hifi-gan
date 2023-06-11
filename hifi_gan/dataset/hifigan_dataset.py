@@ -2,13 +2,8 @@ import random
 from os import path
 from typing import List, Optional, Tuple
 
-import librosa
-import numpy as np
-import torch
 import torchaudio
 from speech_utils.audio.transforms import HifiGanMelSpectrogram, TacotronMelSpectrogram
-from speech_utils.preprocessing.feature_extraction import extract_features
-from speech_utils.preprocessing.scaler import Scaler
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import Dataset
@@ -24,7 +19,7 @@ class HifiGanDataset(Dataset):
         sample_rate: int = 22050,
         segment_size: int = 8192,
         finetune: bool = False,
-        finetune_dir: Optional[str] = None,
+        finetune_dir: Optional[str] = None
     ):
         self.wav_dir = wav_dir
         self.files = files
@@ -36,8 +31,6 @@ class HifiGanDataset(Dataset):
 
         self.tacotron_mel_spectrogram = TacotronMelSpectrogram()
         self.hifi_gan_spectrogram = HifiGanMelSpectrogram()
-
-        self.finetune = finetune
 
         assert not finetune or (
             finetune and finetune_dir

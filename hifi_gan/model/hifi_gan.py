@@ -109,21 +109,19 @@ class HifiGan(pl.LightningModule):
             "optimizer": generator_optimizer,
             "lr_scheduler": {
                 "scheduler": generator_scheduler,
+                "interval": "step",
+                "frequency": 687,
                 "name": "generator_scheduler",
             },
         }, {
             "optimizer": discriminator_optimizer,
             "lr_scheduler": {
                 "scheduler": discriminator_scheduler,
+                "interval": "step",
+                "frequency": 687,
                 "name": "discriminator_scheduler",
             },
         }
-
-    def on_train_epoch_end(self):
-        generator_scheduler, discriminator_scheduler = self.lr_schedulers()
-
-        generator_scheduler.step()
-        discriminator_scheduler.step()
 
     def training_step(
         self, batch: Tuple[Tensor, Tensor, Tensor], batch_idx: int
@@ -137,22 +135,17 @@ class HifiGan(pl.LightningModule):
 
         # Train the discriminators
         # =====================================================================
-        discriminator_optimizer.zero_grad()
-
         y_df_hat_r, y_df_hat_g, _, _ = self.multi_period_discriminator(
             y, y_hat.detach()
         )
-        loss_disc_f, losses_disc_f_r, losses_disc_f_g = discriminator_loss(
-            y_df_hat_r, y_df_hat_g
-        )
+        loss_disc_f, _, _ = discriminator_loss(y_df_hat_r, y_df_hat_g)
 
         y_ds_hat_r, y_ds_hat_g, _, _ = self.multi_scale_discriminator(y, y_hat.detach())
-        loss_disc_s, losses_disc_s_r, losses_disc_s_g = discriminator_loss(
-            y_ds_hat_r, y_ds_hat_g
-        )
+        loss_disc_s, _, _ = discriminator_loss(y_ds_hat_r, y_ds_hat_g)
 
         loss_discriminator = loss_disc_s + loss_disc_f
 
+        discriminator_optimizer.zero_grad(set_to_none=True)
         self.manual_backward(loss_discriminator)
         discriminator_optimizer.step()
 
@@ -165,8 +158,6 @@ class HifiGan(pl.LightningModule):
         # Create a Mel spectrogram from the predicted waveform
         mel_spectrogram_y_hat = self.mel_spectrogram(y_hat).swapaxes(1, 2)
 
-        generator_optimizer.zero_grad()
-
         # L1 Mel-Spectrogram Loss
         loss_mel = F.l1_loss(mel_spectrogram_y, mel_spectrogram_y_hat) * 45
 
@@ -178,13 +169,23 @@ class HifiGan(pl.LightningModule):
         )
         loss_fm_f = feature_loss(fmap_f_r, fmap_f_g)
         loss_fm_s = feature_loss(fmap_s_r, fmap_s_g)
-        loss_gen_f, losses_gen_f = generator_loss(y_df_hat_g)
-        loss_gen_s, losses_gen_s = generator_loss(y_ds_hat_g)
+        loss_gen_f, _ = generator_loss(y_df_hat_g)
+        loss_gen_s, _ = generator_loss(y_ds_hat_g)
 
         loss_generator = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
 
+        generator_optimizer.zero_grad(set_to_none=True)
         self.manual_backward(loss_generator)
         generator_optimizer.step()
+
+        current_iteration = (
+            self.trainer.num_training_batches * self.current_epoch
+        ) + batch_idx
+
+        if current_iteration > 0 and current_iteration % 687 == 0:
+            generator_scheduler, discriminator_scheduler = self.lr_schedulers()
+            discriminator_scheduler.step()
+            generator_scheduler.step()
 
         self.log("train_generator_loss", loss_generator, on_epoch=True, on_step=True)
 
