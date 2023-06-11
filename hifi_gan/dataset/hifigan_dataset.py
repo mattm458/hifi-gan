@@ -2,6 +2,8 @@ import random
 from os import path
 from typing import List, Optional, Tuple
 
+import numpy as np
+import torch
 import torchaudio
 from speech_utils.audio.transforms import HifiGanMelSpectrogram, TacotronMelSpectrogram
 from torch import Tensor
@@ -19,7 +21,7 @@ class HifiGanDataset(Dataset):
         sample_rate: int = 22050,
         segment_size: int = 8192,
         finetune: bool = False,
-        finetune_dir: Optional[str] = None
+        finetune_dir: Optional[str] = None,
     ):
         self.wav_dir = wav_dir
         self.files = files
