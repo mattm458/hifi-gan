@@ -5,9 +5,11 @@
 		"persistent_workers": true
 	},
 	"dataset": {
-		"segment_size": 8192
+		"segment_size": 8192,
+		"sample_rate": 22050
 	},
 	"trainer": {
-		"max_steps": 2507900
+		"max_steps": 4000000,
+		"val_check_interval": 0.25
 	}
 }
