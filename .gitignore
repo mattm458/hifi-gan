@@ -1,4 +1,6 @@
 .vscode
+*.csv
+*.ckpt
 
 # Custom ML project exclusions
 lightning_logs/
