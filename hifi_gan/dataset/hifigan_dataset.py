@@ -56,7 +56,7 @@ class HifiGanDataset(Dataset):
 
         if sr != self.sample_rate:
             raise Exception(
-                f"Sample rate of loaded WAV ({sr}) is not the same as configured sample rate ({self.sr}!"
+                f"Sample rate of loaded WAV ({sr}) is not the same as configured sample rate ({self.sample_rate}!"
             )
 
         # Trimming excess silence from the front and end of the wav file
