@@ -65,6 +65,62 @@ if __name__ == "__main__":
             ckpt_path=args.checkpoint,
         )
 
+    elif args.mode == "finetune":
+        wav_dir = args.wav_dir
+        finetune_dir = args.finetune_dir
+
+        train_data = pd.read_csv(
+            args.training_data, delimiter="|", quoting=csv.QUOTE_NONE
+        )
+        train_dataset = HifiGanDataset(
+            wav_dir=wav_dir,
+            files=train_data.wav.tolist(),
+            finetune=True,
+            finetune_dir=finetune_dir,
+            **config["dataset"]
+        )
+        train_dataloader = DataLoader(
+            train_dataset,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+            **config["dataloader"]
+        )
+
+        val_data = pd.read_csv(
+            args.validation_data, delimiter="|", quoting=csv.QUOTE_NONE
+        )
+        val_dataset = HifiGanDataset(
+            wav_dir, val_data.wav.tolist(), finetune=True, finetune_dir=finetune_dir
+        )
+        val_dataloader = DataLoader(
+            val_dataset,
+            shuffle=False,
+            drop_last=False,
+            pin_memory=True,
+            **config["dataloader"]
+        )
+
+        torch.set_float32_matmul_precision("high")
+
+        hifi_gan = HifiGan.load_from_checkpoint(args.finetune_ckpt)
+
+        trainer = pl.Trainer(
+            devices=[args.device],
+            accelerator="gpu",
+            precision="16-mixed",
+            **config["trainer"],
+            callbacks=[LearningRateMonitor(logging_interval="epoch")],
+            benchmark=True
+        )
+
+        trainer.fit(
+            hifi_gan,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=val_dataloader,
+            ckpt_path=args.checkpoint,
+        )
+
     elif args.mode == "test":
         print("Testing")
     elif args.mode == "torchscript":

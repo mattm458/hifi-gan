@@ -1,6 +1,6 @@
 import random
 from os import path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import librosa
 import numpy as np
@@ -23,10 +23,8 @@ class HifiGanDataset(Dataset):
         files: List[str],
         sample_rate: int = 22050,
         segment_size: int = 8192,
-        trim: bool = False,
-        trim_frame_length=512,
-        extract_features=None,
-        scaler: Scaler = None,
+        finetune: bool = False,
+        finetune_dir: Optional[str] = None,
     ):
         self.wav_dir = wav_dir
         self.files = files
@@ -36,14 +34,17 @@ class HifiGanDataset(Dataset):
         self.segment_size = segment_size
         self.hop_length = 256
 
-        self.trim = trim
-        self.trim_frame_length = trim_frame_length
-
         self.tacotron_mel_spectrogram = TacotronMelSpectrogram()
         self.hifi_gan_spectrogram = HifiGanMelSpectrogram()
 
-        self.extract_features = extract_features
-        self.scaler = scaler
+        self.finetune = finetune
+
+        assert not finetune or (
+            finetune and finetune_dir
+        ), "If fine-tuning, a directory of fine-tune spectrograms is required!"
+
+        self.finetune = finetune
+        self.finetune_dir = finetune_dir
 
     def __len__(self) -> int:
         return len(self.files)
@@ -59,44 +60,47 @@ class HifiGanDataset(Dataset):
                 f"Sample rate of loaded WAV ({sr}) is not the same as configured sample rate ({self.sample_rate}!"
             )
 
-        # Trimming excess silence from the front and end of the wav file
-        if self.trim:
-            wav, _ = librosa.effects.trim(
-                wav.numpy(), frame_length=self.trim_frame_length
+        if self.finetune:
+            if not self.finetune_dir:
+                raise Exception("Missing fine_tune directory!")
+
+            tacotron_mel_path = path.join(
+                self.finetune_dir, f"{filename.replace('/', '_')}.np.npy"
             )
-            wav = torch.from_numpy(wav)
+            tacotron_mel = torch.from_numpy(np.load(tacotron_mel_path))
 
-        # Choose a random segment from the wav data.
-        if len(wav) >= self.segment_size:
-            max_wav_start = len(wav) - self.segment_size
-            wav_start = random.randint(0, max_wav_start)
-            wav = wav[wav_start : wav_start + self.segment_size]
+            # Pad the wav using the same padding technique as the Torch stft function
+            signal_dim = wav.dim()
+            extended_shape = [1] * (3 - signal_dim) + list(wav.size())
+            pad = int(self.tacotron_mel_spectrogram.n_fft // 2)
+            wav_padded = F.pad(wav.view(extended_shape), [pad, pad], "reflect")
+            wav_padded = wav_padded.view(wav_padded.shape[-signal_dim:])
 
+            mel_start = random.randint(0, tacotron_mel.shape[0] - 29)
+            mel_end = mel_start + 29
+
+            wav_start = mel_start * self.tacotron_mel_spectrogram.hop_length
+            wav_end = wav_start + self.segment_size
+
+            wav = wav_padded[wav_start:wav_end]
+            mel_spectrogram_X = tacotron_mel[mel_start:mel_end]
+            mel_spectrogram_y = self.hifi_gan_spectrogram(wav_padded[wav_start:wav_end])
+
+            return mel_spectrogram_X, wav, mel_spectrogram_y
         else:
-            # If the wav data is too short (unlikely in most TTS datasets),
-            # pad it to get the correct segment size
-            wav = F.pad(wav, (0, self.segment_size - len(wav)))
+            # Choose a random segment from the wav data.
+            if len(wav) >= self.segment_size:
+                max_wav_start = len(wav) - self.segment_size
+                wav_start = random.randint(0, max_wav_start)
+                wav = wav[wav_start : wav_start + self.segment_size]
 
-        wav_tacotron = pad_wav_generator(wav)
-        mel_spectrogram_X = self.tacotron_mel_spectrogram(wav_tacotron)[2:-2]
-        mel_spectrogram_y = self.hifi_gan_spectrogram(wav)
+            else:
+                # If the wav data is too short (unlikely in most TTS datasets),
+                # pad it to get the correct segment size
+                wav = F.pad(wav, (0, self.segment_size - len(wav)))
 
-        if self.extract_features is not None:
-            features_dict = extract_features(
-                wav_data=wav.numpy(), sample_rate=self.sample_rate
-            )
-            features_scaled = self.scaler.transform(
-                np.array([features_dict[f] for f in self.extract_features])
-            ).values
+            wav_tacotron = pad_wav_generator(wav)
+            mel_spectrogram_X = self.tacotron_mel_spectrogram(wav_tacotron)[2:-2]
+            mel_spectrogram_y = self.hifi_gan_spectrogram(wav)
 
-            features_scaled = torch.from_numpy(features_scaled)
-            features_clipped = torch.clamp(features_scaled, min=-1, max=1)
-
-            return (
-                mel_spectrogram_X,
-                wav,
-                mel_spectrogram_y,
-                features_clipped,
-            )
-
-        return mel_spectrogram_X, wav, mel_spectrogram_y
+            return mel_spectrogram_X, wav, mel_spectrogram_y
