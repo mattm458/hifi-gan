@@ -10,6 +10,10 @@
 	},
 	"trainer": {
 		"max_steps": 4000000,
-		"val_check_interval": 0.25
+		"val_check_interval": 0.125
+	},
+	"finetune_overrides": {
+		"lr": 0.00001,
+		"max_steps": 200000
 	}
 }
