@@ -71,17 +71,16 @@ class HifiGanDataset(Dataset):
             wav_padded = F.pad(wav.view(extended_shape), [pad, pad], "reflect")
             wav_padded = wav_padded.view(wav_padded.shape[-signal_dim:])
 
-            mel_start = random.randint(0, tacotron_mel.shape[0] - 29)
-            mel_end = mel_start + 29
+            mel_start = random.randint(0, tacotron_mel.shape[0] - 32)
+            mel_end = mel_start + 32
 
             wav_start = mel_start * self.tacotron_mel_spectrogram.hop_length
             wav_end = wav_start + self.segment_size
 
-            wav = wav_padded[wav_start:wav_end]
             mel_spectrogram_X = tacotron_mel[mel_start:mel_end]
             mel_spectrogram_y = self.hifi_gan_spectrogram(wav_padded[wav_start:wav_end])
 
-            return mel_spectrogram_X, wav, mel_spectrogram_y
+            return mel_spectrogram_X, wav_padded[wav_start:wav_end], mel_spectrogram_y
         else:
             # Choose a random segment from the wav data.
             if len(wav) >= self.segment_size:
