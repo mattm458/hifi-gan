@@ -50,6 +50,7 @@ class HifiGan(pl.LightningModule):
 
         self.lr = lr
         self.lr_decay = lr_decay
+        self.finetune = False
 
         self.generator = Generator()
         self.multi_period_discriminator = MultiPeriodDiscriminator()
@@ -91,37 +92,41 @@ class HifiGan(pl.LightningModule):
         generator_optimizer = torch.optim.AdamW(
             self.generator.parameters(), lr=self.lr, betas=(0.8, 0.99)
         )
-        generator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
-            generator_optimizer, gamma=self.lr_decay
-        )
-
         discriminator_optimizer = torch.optim.AdamW(
             list(self.multi_period_discriminator.parameters())
             + list(self.multi_scale_discriminator.parameters()),
             lr=self.lr,
             betas=(0.8, 0.99),
         )
-        discriminator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
-            discriminator_optimizer, gamma=self.lr_decay
-        )
 
-        return {
-            "optimizer": generator_optimizer,
-            "lr_scheduler": {
-                "scheduler": generator_scheduler,
-                "interval": "step",
-                "frequency": 687,
-                "name": "generator_scheduler",
-            },
-        }, {
-            "optimizer": discriminator_optimizer,
-            "lr_scheduler": {
-                "scheduler": discriminator_scheduler,
-                "interval": "step",
-                "frequency": 687,
-                "name": "discriminator_scheduler",
-            },
-        }
+        if self.finetune:
+            return generator_optimizer, discriminator_optimizer
+        else:
+            generator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+                generator_optimizer, gamma=self.lr_decay
+            )
+
+            discriminator_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+                discriminator_optimizer, gamma=self.lr_decay
+            )
+
+            return {
+                "optimizer": generator_optimizer,
+                "lr_scheduler": {
+                    "scheduler": generator_scheduler,
+                    "interval": "step",
+                    "frequency": 687,
+                    "name": "generator_scheduler",
+                },
+            }, {
+                "optimizer": discriminator_optimizer,
+                "lr_scheduler": {
+                    "scheduler": discriminator_scheduler,
+                    "interval": "step",
+                    "frequency": 687,
+                    "name": "discriminator_scheduler",
+                },
+            }
 
     def training_step(
         self, batch: Tuple[Tensor, Tensor, Tensor], batch_idx: int
@@ -182,7 +187,7 @@ class HifiGan(pl.LightningModule):
             self.trainer.num_training_batches * self.current_epoch
         ) + batch_idx
 
-        if current_iteration > 0 and current_iteration % 687 == 0:
+        if not self.finetune and current_iteration > 0 and current_iteration % 687 == 0:
             generator_scheduler, discriminator_scheduler = self.lr_schedulers()
             discriminator_scheduler.step()
             generator_scheduler.step()

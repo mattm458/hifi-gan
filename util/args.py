@@ -49,47 +49,62 @@ def train_subparser(subparsers):
 
 
 def finetune_subparser(subparsers):
-    train_subparser = subparsers.add_parser(
+    finetune_subparsers = subparsers.add_parser(
         "finetune", help="Fine-tune the model on generated Mel spectrograms"
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
         "--checkpoint",
         type=str,
-        required=True,
-        help="Resume training from the given checkpoint.",
+        required=False,
+        help="Begin fine-tuning from the given trained checkpoint.",
         default=None,
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
+        "--resume-checkpoint",
+        type=str,
+        required=False,
+        help="Resume fine-tuning from an in-progress fine-tuning checkpoint.",
+        default=None,
+    )
+
+    finetune_subparsers.add_argument(
         "--training-data",
         type=str,
         required=True,
         help="Path to the training data",
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
         "--validation-data",
         type=str,
         required=True,
         help="Path to the validation data",
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
         "--wav-dir",
         type=str,
         required=True,
         help="Path to the dataset's directory of WAV files",
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
+        "--finetune-dir",
+        type=str,
+        required=True,
+        help="Path to a directory of Tacotron output spectrograms",
+    )
+
+    finetune_subparsers.add_argument(
         "--device",
         type=int,
         required=True,
         help="The GPU to use for training",
     )
 
-    train_subparser.add_argument(
+    finetune_subparsers.add_argument(
         "--num-workers",
         type=int,
         default=3,
